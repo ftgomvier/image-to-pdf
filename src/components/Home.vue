@@ -56,12 +56,15 @@
 
     .m-30
       UploadImage(
+        @click="clearButtonUp"
         :maxHeight="pxImgHeight",
         :maxWidth="pxImgWidth",
         :maxQuality="quality",
         @resizedImage="resizedImage"
-        @cleanImages="cleanImages"
       )
+
+    .m-30(v-if="imagesResized.length > 0")
+      button(@click="cleanImages") Clear images' set
 
     .m-30
       h3 PDF settings:
@@ -116,16 +119,24 @@ export default {
     this.resolutions()
   },
   methods: {
+    clearButtonUp () {
+      document.getElementById('docUp').value = ''
+    },
     cleanImages () {
       this.imagesResized = []
+      this.clearButtonUp()
     },
     resizedImage (img) {
-      this.imagesResized.push(img)
-      console.log('imagesResized', this.imagesResized)
+      if (typeof img !== 'undefined') {
+        this.imagesResized.push(img)
+      }
     },
     getSrc (img) {
-      console.log(img)
-      return 'data:image/png;base64,' + img.base64
+      if (typeof img.base64 !== 'undefined') {
+        return 'data:image/png;base64,' + img.base64
+      }
+
+      return ''
     },
     downloadPdf () {
       let pdf = new JsPdf(this.pdfOrientation[0], 'pt', [this.maxWidth, this.maxHeight])

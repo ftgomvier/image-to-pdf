@@ -72,7 +72,6 @@
     },
     methods: {
       onFileChange (e) {
-        this.$emit('cleanImages')
         var files = e.target.files || e.dataTransfer.files
 
         if (files.length <= 0) {
@@ -159,8 +158,6 @@
                   canvasUrl: blob[2],
                   scale: [blob[3], blob[4]]
                 }
-
-                console.log('img result', img)
 
                 this.$emit('resizedImage', img)
               })
