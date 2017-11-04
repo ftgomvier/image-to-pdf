@@ -1,87 +1,117 @@
 <template lang="pug">
   .Home
-    .m-30
-      h2 Image configurations:
-      label  Quality of the images (%):
-      input(
-        v-model="quality",
-        type="number",
-        placeholder="Set the quality of the image",
-        max="100",
-        min="30"
-      )
+    .container
+      .left-sidebar
+        .m-30
+          h2 Image settings:
+          .line-container
+            .item-line-container-left
+              label  Quality of the images (%):
+            .item-line-container-right
+              input(
+                v-model="quality",
+                type="number",
+                placeholder="Set the quality of the image",
+                max="100",
+                min="30"
+              )
 
-    .m-30
-      h2 PDF configuration
-      label  How many images in the same page?
-      input(
-        v-model="pdfImgOnPage",
-        type="number",
-        placeholder="Set the max Width"
-        min=1
-        max=10
-      )
-      br
-      label  Width margin (cm):
-      input(
-        v-model="marginWidth",
-        type="number",
-        placeholder="Set the max Width"
-        min=0
-        max=5
-      )
-      label  Height margin (cm):
-      input(
-        v-model="marginHeight",
-        type="number",
-        placeholder="Set the max Width"
-        min=0
-        max=5
-      )
-      br
-      label  What is the page orientation?
-      select(name="pdfOrientation", v-model="pdfOrientation" @change="resolutions")
-        option(value="portrait") Portrait
-        option(value="landscape") Landscape
-      br
-      label What is the quality resolution of the paper?
-      select(name="pdfQuality", v-model="pdfQuality" @change="resolutions")
-        option(value="low") Low
-        option(value="medium") Medium
-        option(value="high") High
-      br
-      label How many ppi?
-      select(name="pdfPPi", v-model="pdfPPi" @change="resolutions")
-        option(v-for="(ppi, index) in ppiOptions", :key="index", :value="ppi") {{ ppi }} PPI
+        .m-30
+          h2 PDF settings
+          p
+            .line-container
+              .item-line-container-left
+                label  How many images in the same page?
+              .item-line-container-right
+                input(
+                  v-model="pdfImgOnPage",
+                  type="number",
+                  placeholder="Set the max Width"
+                  min=1
+                  max=10
+                )
+          p
+            .line-container
+              .item-line-container-left
+                label  Width margin (cm):
+              .item-line-container-right
+                input(
+                  v-model="marginWidth",
+                  type="number",
+                  placeholder="Set the max Width"
+                  min=0
+                  max=5
+                )
+          p
+            .line-container
+              .item-line-container-left
+                label  Height margin (cm):
+              .item-line-container-right
+                input(
+                  v-model="marginHeight",
+                  type="number",
+                  placeholder="Set the max Width"
+                  min=0
+                  max=5
+                )
+          p
+            .line-container
+              .item-line-container-left
+                label  What is the page orientation?
+              .item-line-container-right
+                select(name="pdfOrientation", v-model="pdfOrientation" @change="resolutions")
+                  option(value="portrait") Portrait
+                  option(value="landscape") Landscape
 
-    .m-30
-      UploadImage(
-        @click="clearButtonUp"
-        :maxHeight="pxImgHeight",
-        :maxWidth="pxImgWidth",
-        :maxQuality="quality",
-        @resizedImage="resizedImage"
-      )
+          p
+            .line-container
+              .item-line-container-left
+                label Quality resolution of the paper?
+              .item-line-container-right
+                select(name="pdfQuality", v-model="pdfQuality" @change="resolutions")
+                  option(value="low") Low
+                  option(value="medium") Medium
+                  option(value="high") High
+          p
+            .line-container
+              .item-line-container-left
+                label How many ppi?
+              .item-line-container-right
+                select(name="pdfPPi", v-model="pdfPPi" @change="resolutions")
+                  option(v-for="(ppi, index) in ppiOptions", :key="index", :value="ppi") {{ ppi }} PPI
 
-    .m-30(v-if="imagesResized.length > 0")
-      button(@click="cleanImages") Clear images' set
+        .m-30
+          .upload-field
+            h2 Upload images
+            UploadImage(
+              style="margin-left: 0 auto;"
+              @click="clearButtonUp"
+              :maxHeight="pxImgHeight",
+              :maxWidth="pxImgWidth",
+              :maxQuality="quality",
+              @resizedImage="resizedImage"
+            )
 
-    .m-30
-      h3 PDF settings:
-      p Page A4, {{ pdfOrientation | capitalize }}, {{ maxWidth }} x {{ maxHeight }},
-        |  margins: {{ marginWidth }}cm (~{{ pxMarginWidth }}px) x {{ marginHeight }}cm (~{{ pxMarginHeight }}px),
-        | {{ pdfImgOnPage }} images in each page
+        .m-30(v-if="imagesResized.length > 0")
+          button(@click="cleanImages") Clear images' set
 
-    .m-30
-      button(
-        @click='downloadPdf',
-      ) Download PDF
+      .body-side
+        .m-30
+          h3 PDF settings:
+          p Page A4, {{ pdfOrientation | capitalize }}, {{ maxWidth }} x {{ maxHeight }},
+            |  margins: {{ marginWidth }}cm (~{{ pxMarginWidth }}px) x {{ marginHeight }}cm (~{{ pxMarginHeight }}px),
+            | {{ pdfImgOnPage }} images in each page
 
-    div(v-for="(img, index) in imagesResized", :key='index' style="max-width: 25%; float: left; margin-left: 5%;")
-      img(
-        :src='getSrc(img)',
-        style="max-width: 100%;"
-      )
+        .m-30
+          button(
+            @click='downloadPdf',
+          ) Download PDF
+
+        div(v-for="(img, index) in imagesResized", :key='index' style="max-width: 25%; float: left; margin-left: 5%;")
+          img(
+            :src='getSrc(img)',
+            style="max-width: 100%;"
+          )
 
 </template>
 
@@ -226,12 +256,65 @@ export default {
 </script>
 
 <style scoped>
+
 .m-30 {
   margin: 30px;
 }
-label {
-  margin-right: 10px;
+
+.container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: stretch;
+  align-content: stretch;
+  height: 100vh;
+}
+
+.line-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid hsl(180, 30%, 40%);
+  border-left: 1px solid hsl(180, 30%, 40%);
+  border-bottom-left-radius: 5px;
+  padding-bottom: 10px;
+  padding-left: 10px;
+}
+.item-line-container-left {
+  align-self: center;
+}
+.item-line-container-right {
+  align-self: center;
+}
+
+.left-sidebar h2 {
+  text-align: center;
+}
+
+.left-sidebar input, select {
+  width: 100px;
   margin-left: 30px;
+}
+
+.left-sidebar {
+  order: 1;
+  background-color: hsl(180, 10%, 30%);
+  color: hsl(180, 30%, 90%);
+}
+.body-side {
+  order: 2;
+}
+
+.upload-field {
+  text-align: center;
+  background-color: hsla(180, 20%, 50%, 0.2);
+  border: 1px hsl(180, 30%, 40%) solid;
+  border-radius: 20px;
+  padding-bottom: 30px;
+  /* padding-left: 30px; */
 }
 </style>
 
