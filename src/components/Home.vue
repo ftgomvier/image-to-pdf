@@ -196,19 +196,20 @@ export default {
         let isPortrait = this.pdfOrientation === 'portrait'
         let image = this.imagesResized[index]
 
-        // let avarageScale = this.getAvarageScale(index)
-        // var wScale
-        // var hScale
-        // if (isPortrait) {
-        //   wScale = (image.scale[0] * 0.75)
-        //   hScale = (((image.scale[1] * 0.75) * avarageScale) / wScale)
-        // } else {
-        //   hScale = (image.scale[1] * 0.75)
-        //   wScale = (((image.scale[0] * 0.75) * avarageScale) / hScale)
-        // }
+        let avarageScale = this.getAvarageScale(index)
+        var wScale = image.scale[0] * 0.75
+        var hScale = image.scale[1] * 0.75
 
-        let wScale = (image.scale[0] * 0.75) / this.pdfImgOnPage
-        let hScale = (image.scale[1] * 0.75) / this.pdfImgOnPage
+        if (isPortrait && avarageScale) {
+          hScale = ((hScale * avarageScale) / wScale)
+        } else {
+          wScale = ((wScale * avarageScale) / hScale)
+        }
+
+        console.log(avarageScale, wScale, wScale)
+
+        // let wScale = (image.scale[0] * 0.75) / this.pdfImgOnPage
+        // let hScale = (image.scale[1] * 0.75) / this.pdfImgOnPage
 
         pdf.addImage(image.canvasUrl, 'jpeg', wMargin, hMargin, wScale, hScale)
         if (counter >= parseInt(this.pdfImgOnPage) && iterator < this.imagesResized.length) {
@@ -249,18 +250,22 @@ export default {
       })
     },
     getAvarageScale (index) {
-      let current = this.imagesResized[index]
-      let lastId = this.imagesResized.length - 1
-      if (index + 1 <= lastId) {
-        let nxtIndex = index + 1
-        let next = this.imagesResized[nxtIndex]
-        console.log(current, next)
+      let slice = this.imagesResized.slice(index, index + 2)
+      let current = slice[0]
+      let next = slice[1]
+      if (typeof next !== 'undefined') {
         if (this.pdfOrientation === 'portrait') {
-          return (current.scale[1] + next.scale[1]) / this.pdfImgOnPage
+          let height = current.scale[1] + next.scale[1]
+          let maxHeight = this.maxHeight - (this.pxMarginHeight * 2)
+          if (height > maxHeight) {
+            return (maxHeight - height)
+          }
         } else {
           return (current.scale[0] + next.scale[0]) / this.pdfImgOnPage
         }
       }
+
+      return 0
     },
     changeQuality (quality) {
       switch (quality) {
