@@ -4,7 +4,7 @@
       .left-sidebar
         .m-30
           h2 Image settings:
-          .line-container
+          .line-container.line-border
             .item-line-container-left
               label  Quality of the images (%):
             .item-line-container-right
@@ -19,11 +19,19 @@
         .m-30
           h2 PDF settings
           p
-            .line-container
+            .line-container(style="margin: 50px 0px 50px 0px;")
+              p Quick settings:
+              a.button(@click="changeQuality('lowest')") Lowest
+              a.button(@click="changeQuality('low')") Low
+              a.button(@click="changeQuality('medium')") Medium
+              a.button(@click="changeQuality('high')") High
+          p
+            .line-container.line-border
               .item-line-container-left
                 label  How many images in the same page?
               .item-line-container-right
                 input(
+                  @change="cleanImages()",
                   v-model="pdfImgOnPage",
                   type="number",
                   placeholder="Set the max Width"
@@ -31,11 +39,12 @@
                   max=10
                 )
           p
-            .line-container
+            .line-container.line-border
               .item-line-container-left
                 label  Width margin (cm):
               .item-line-container-right
                 input(
+                  @change="cleanImages()",
                   v-model="marginWidth",
                   type="number",
                   placeholder="Set the max Width"
@@ -43,11 +52,12 @@
                   max=5
                 )
           p
-            .line-container
+            .line-container.line-border
               .item-line-container-left
                 label  Height margin (cm):
               .item-line-container-right
                 input(
+                  @change="cleanImages()",
                   v-model="marginHeight",
                   type="number",
                   placeholder="Set the max Width"
@@ -55,7 +65,7 @@
                   max=5
                 )
           p
-            .line-container
+            .line-container.line-border
               .item-line-container-left
                 label  What is the page orientation?
               .item-line-container-right
@@ -64,7 +74,7 @@
                   option(value="landscape") Landscape
 
           p
-            .line-container
+            .line-container.line-border
               .item-line-container-left
                 label Quality resolution of the paper?
               .item-line-container-right
@@ -73,7 +83,7 @@
                   option(value="medium") Medium
                   option(value="high") High
           p
-            .line-container
+            .line-container.line-border
               .item-line-container-left
                 label How many ppi?
               .item-line-container-right
@@ -92,8 +102,8 @@
               @resizedImage="resizedImage"
             )
 
-        .m-30(v-if="imagesResized.length > 0")
-          button(@click="cleanImages") Clear images' set
+            div(v-if="imagesResized.length > 0" style="margin: 30px 0px 0px 0px;")
+              button(@click="cleanImages") Clear images' set
 
       .body-side
         .m-30
@@ -102,13 +112,14 @@
             |  margins: {{ marginWidth }}cm (~{{ pxMarginWidth }}px) x {{ marginHeight }}cm (~{{ pxMarginHeight }}px),
             | {{ pdfImgOnPage }} images in each page
 
-        .m-30
+        .m-30(v-if="pdfMade")
           button(
             @click='downloadPdf',
           ) Download PDF
 
         div(v-for="(img, index) in imagesResized", :key='index' style="max-width: 25%; float: left; margin-left: 5%;")
           img(
+            :id="getId(index)"
             :src='getSrc(img)',
             style="max-width: 100%;"
           )
@@ -128,10 +139,11 @@ export default {
   },
   data () {
     return {
+      pdfMade: false,
       pdfImgOnPage: 1,
       pdfOrientation: 'portrait',
       pdfQuality: 'low',
-      pdfPPi: '300',
+      pdfPPi: '72',
       marginWidth: 0,
       marginHeight: 0,
       quality: 90,
@@ -150,15 +162,18 @@ export default {
   },
   methods: {
     clearButtonUp () {
+      this.pdfMade = false
       document.getElementById('docUp').value = ''
     },
     cleanImages () {
+      this.pdfMade = false
       this.imagesResized = []
       this.clearButtonUp()
     },
     resizedImage (img) {
       if (typeof img !== 'undefined') {
         this.imagesResized.push(img)
+        this.pdfMade = true
       }
     },
     getSrc (img) {
@@ -169,16 +184,44 @@ export default {
       return ''
     },
     downloadPdf () {
-      let pdf = new JsPdf(this.pdfOrientation[0], 'pt', [this.maxWidth, this.maxHeight])
+      let pdf = new JsPdf(this.pdfOrientation[0], 'pt', [this.maxWidth * 0.75, this.maxHeight * 0.75])
       let counter = 0
-      let iteration = 0
-      for (let image of this.imagesResized) {
-        counter++
-        iteration++
-        pdf.addImage(image.canvasUrl, 'jpeg', this.ptMarginWidth, this.ptMarginHeight, image.scale[0], image.scale[1])
-        if (counter === this.pdfImgOnPage && iteration < this.imagesResized.length) {
+      let iterator = 0
+      var hMargin = this.ptMarginHeight
+      var wMargin = this.ptMarginWidth
+      for (let index in this.imagesResized) {
+        counter += 1
+        iterator += 1
+
+        let isPortrait = this.pdfOrientation === 'portrait'
+        let image = this.imagesResized[index]
+
+        // let avarageScale = this.getAvarageScale(index)
+        // var wScale
+        // var hScale
+        // if (isPortrait) {
+        //   wScale = (image.scale[0] * 0.75)
+        //   hScale = (((image.scale[1] * 0.75) * avarageScale) / wScale)
+        // } else {
+        //   hScale = (image.scale[1] * 0.75)
+        //   wScale = (((image.scale[0] * 0.75) * avarageScale) / hScale)
+        // }
+
+        let wScale = (image.scale[0] * 0.75) / this.pdfImgOnPage
+        let hScale = (image.scale[1] * 0.75) / this.pdfImgOnPage
+
+        pdf.addImage(image.canvasUrl, 'jpeg', wMargin, hMargin, wScale, hScale)
+        if (counter >= parseInt(this.pdfImgOnPage) && iterator < this.imagesResized.length) {
           counter = 0
+          hMargin = this.ptMarginHeight
+          wMargin = this.ptMarginWidth
           pdf.addPage()
+        } else {
+          if (isPortrait) {
+            hMargin += hScale + this.ptMarginHeight
+          } else {
+            wMargin += wScale + this.ptMarginWidth
+          }
         }
       }
 
@@ -201,7 +244,53 @@ export default {
 
         this.maxHeight = resolutions[this.pdfPPi].height
         this.maxWidth = resolutions[this.pdfPPi].width
+
+        this.cleanImages()
       })
+    },
+    getAvarageScale (index) {
+      let current = this.imagesResized[index]
+      let lastId = this.imagesResized.length - 1
+      if (index + 1 <= lastId) {
+        let nxtIndex = index + 1
+        let next = this.imagesResized[nxtIndex]
+        console.log(current, next)
+        if (this.pdfOrientation === 'portrait') {
+          return (current.scale[1] + next.scale[1]) / this.pdfImgOnPage
+        } else {
+          return (current.scale[0] + next.scale[0]) / this.pdfImgOnPage
+        }
+      }
+    },
+    changeQuality (quality) {
+      switch (quality) {
+        case 'lowest':
+          this.pdfPPi = '72'
+          this.pdfQuality = 'low'
+          break
+
+        case 'low':
+          this.pdfPPi = '300'
+          this.pdfQuality = 'low'
+          break
+
+        case 'medium':
+          this.pdfQuality = 'medium'
+          this.pdfPPi = '600'
+          break
+
+        case 'high':
+          this.pdfQuality = 'high'
+          this.pdfPPi = '1440'
+          break
+
+        default:
+          break
+      }
+      this.resolutions()
+    },
+    getId (index) {
+      return 'image-' + index
     }
   },
   computed: {
@@ -212,7 +301,7 @@ export default {
         'high': ['1440', '2400', '2880']
       }
 
-      this.pdfPPi = ppi[this.pdfQuality][ppi[this.pdfQuality].length - 1]
+      this.pdfPPi = ppi[this.pdfQuality][0]
 
       return ppi[this.pdfQuality]
     },
@@ -233,10 +322,16 @@ export default {
       return this.pxMarginHeight * 0.75
     },
     pxImgWidth: function () {
-      return parseInt(((this.maxWidth - (this.pxMarginWidth * 2)) / this.pdfImgOnPage))
+      let reduceMargin = this.pdfOrientation === 'landscape' ? this.pxMarginHeight * 4 : this.pxMarginHeight * 2
+      let size = this.maxWidth - reduceMargin
+      size = this.pdfOrientation === 'portrait' ? size : size / this.pdfImgOnPage
+      return parseInt(size)
     },
     pxImgHeight: function () {
-      return parseInt(((this.maxHeight - (this.pxMarginHeight * 2)) / this.pdfImgOnPage))
+      let reduceMargin = this.pdfOrientation === 'portrait' ? this.pxMarginHeight * 4 : this.pxMarginHeight * 2
+      let size = this.maxHeight - reduceMargin
+      size = this.pdfOrientation === 'portrait' ? size / this.pdfImgOnPage : size
+      return parseInt(size)
     },
     ptImgWidth: function () {
       return parseInt(this.pxImgWidth * 0.75)
@@ -271,18 +366,22 @@ export default {
   height: 100vh;
 }
 
-.line-container {
+.line-container.line-border {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+}
+
+.line-border {
   border-bottom: 1px solid hsl(180, 30%, 40%);
   border-left: 1px solid hsl(180, 30%, 40%);
   border-bottom-left-radius: 5px;
   padding-bottom: 10px;
   padding-left: 10px;
 }
+
 .item-line-container-left {
   align-self: center;
 }
@@ -306,6 +405,7 @@ export default {
 }
 .body-side {
   order: 2;
+  width: 50%;
 }
 
 .upload-field {
@@ -315,6 +415,14 @@ export default {
   border-radius: 20px;
   padding-bottom: 30px;
   /* padding-left: 30px; */
+}
+
+.button {
+  background-color: hsla(180, 20%, 50%, 0.2);
+  border: 1px hsl(180, 30%, 40%) solid;
+  border-radius: 2px;
+  padding: 8px 25px 8px 25px;
+  margin: 5px;
 }
 </style>
 
