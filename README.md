@@ -6,15 +6,14 @@ This projet pretend to deliver a single image to pdf converter.
 
 ## Features to do:
 
-1. Upload images
-2. Modify them:
-    * Apply max width/height
-    * Change it quality.
-    * Crop/Rotate
-    * Arrange the images as you want
-4. Download a .pdf file with the images.
+* Crop/Rotate
+* Arrange the images as you want
 
 ## Features done:
+* Upload images
+* Apply max width/height
+* Change images quality.
+* Download a .pdf file with the images.
 
 ## Built with [Vue.js](https://vuejs.org/)
 ### Build Setup

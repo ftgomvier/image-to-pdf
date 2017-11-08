@@ -189,30 +189,40 @@ export default {
       let iterator = 0
       var hMargin = this.ptMarginHeight
       var wMargin = this.ptMarginWidth
-      for (let index in this.imagesResized) {
+      var fitSize = 0
+      while (iterator < this.imagesResized.length) {
         counter += 1
-        iterator += 1
 
         let isPortrait = this.pdfOrientation === 'portrait'
-        let image = this.imagesResized[index]
+        let image = this.imagesResized[iterator]
 
-        let avarageScale = this.getAvarageScale(index)
+        if (typeof image === 'undefined') {
+          return
+        }
+
+        if (this.pdfImgOnPage > 1 && iterator % this.pdfImgOnPage === 0) {
+          fitSize = isPortrait ? (this.maxHeight * 0.75) / this.pdfImgOnPage : (this.maxWidth * 0.75) / this.pdfImgOnPage
+        }
+
         var wScale = image.scale[0] * 0.75
         var hScale = image.scale[1] * 0.75
 
-        if (isPortrait && avarageScale) {
-          hScale = ((hScale * avarageScale) / wScale)
-        } else {
-          wScale = ((wScale * avarageScale) / hScale)
+        // Resize with new Scale
+        if (isPortrait && fitSize > 0) {
+          let oldScale = hScale
+          hScale = fitSize
+          wScale = (wScale * hScale) / oldScale
+        } else if (!isPortrait && fitSize > 0) {
+          let oldScale = wScale
+          wScale = fitSize
+          hScale = (hScale * wScale) / oldScale
         }
 
-        console.log(avarageScale, wScale, wScale)
-
-        // let wScale = (image.scale[0] * 0.75) / this.pdfImgOnPage
-        // let hScale = (image.scale[1] * 0.75) / this.pdfImgOnPage
+        console.log(iterator, fitSize, image, hScale, wScale, hMargin, wMargin)
 
         pdf.addImage(image.canvasUrl, 'jpeg', wMargin, hMargin, wScale, hScale)
-        if (counter >= parseInt(this.pdfImgOnPage) && iterator < this.imagesResized.length) {
+        if (counter >= parseInt(this.pdfImgOnPage) && iterator < (this.imagesResized.length - 1)) {
+          fitSize = 0
           counter = 0
           hMargin = this.ptMarginHeight
           wMargin = this.ptMarginWidth
@@ -224,6 +234,8 @@ export default {
             wMargin += wScale + this.ptMarginWidth
           }
         }
+
+        iterator += 1
       }
 
       pdf.save()
@@ -250,22 +262,20 @@ export default {
       })
     },
     getAvarageScale (index) {
-      let slice = this.imagesResized.slice(index, index + 2)
-      let current = slice[0]
-      let next = slice[1]
-      if (typeof next !== 'undefined') {
-        if (this.pdfOrientation === 'portrait') {
-          let height = current.scale[1] + next.scale[1]
-          let maxHeight = this.maxHeight - (this.pxMarginHeight * 2)
-          if (height > maxHeight) {
-            return (maxHeight - height)
-          }
-        } else {
-          return (current.scale[0] + next.scale[0]) / this.pdfImgOnPage
-        }
+      let slice = this.imagesResized.slice(index, index + this.pdfImgOnPage)
+
+      // Verify if images fit on page "naturally"
+      let imagesFitOnPage = 0
+      for (let s of slice) {
+        imagesFitOnPage += this.pdfOrientation === 'portrait' ? s.scale[1] : s.scale[0]
       }
 
-      return 0
+      if (imagesFitOnPage <= this.maxHeight) {
+        return 0
+      } else {
+        let spareSize = imagesFitOnPage - this.maxHeight
+        return spareSize / this.pdfImgOnPage
+      }
     },
     changeQuality (quality) {
       switch (quality) {
