@@ -2,6 +2,12 @@
   .Home
     .container
       .left-sidebar
+        .logo
+          a(href="https://github.com/fthiagogv/ImageToPdf", target="_blank")
+            img(src="http://www.freepngimg.com/download/github/1-2-github-free-png-image.png",
+            width="50px",
+            height="50px"
+            )
         .m-30
           h2 Image settings:
           .line-container.line-border
@@ -438,6 +444,12 @@ export default {
   border-radius: 2px;
   padding: 8px 25px 8px 25px;
   margin: 5px;
+}
+
+.logo {
+  right: 0;
+  top: 0;
+  position: fixed;
 }
 </style>
 
