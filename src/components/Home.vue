@@ -8,8 +8,10 @@
             width="50px",
             height="50px"
             )
+        div(style="margin-left: 10px;")
+          small v1.0
         .m-30
-          h2 Image settings:
+          h2 Image settings
           .line-container.line-border
             .item-line-container-left
               label  Quality of the images (%):
