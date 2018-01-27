@@ -11,7 +11,9 @@ const path = require('path')
 const express = require('express')
 const webpack = require('webpack')
 const proxyMiddleware = require('http-proxy-middleware')
-const webpackConfig = (process.env.NODE_ENV === 'testing' || process.env.NODE_ENV === 'production')
+const webpackConfig = (
+  process.env.NODE_ENV === 'testing' || process.env.NODE_ENV === 'production'
+)
   ? require('./webpack.prod.conf')
   : require('./webpack.dev.conf')
 
@@ -67,8 +69,6 @@ app.use(devMiddleware)
 // serve pure static assets
 const staticPath = path.posix.join(config.dev.assetsPublicPath, config.dev.assetsSubDirectory)
 app.use(staticPath, express.static('./static'))
-
-const uri = 'http://localhost:' + port
 
 var _resolve
 var _reject
