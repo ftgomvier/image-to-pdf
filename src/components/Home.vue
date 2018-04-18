@@ -10,6 +10,22 @@
             )
         div(style="margin-left: 10px;")
           small v1.0
+
+        .m-30
+          .upload-field
+            h2 Upload images
+            UploadImage(
+            style="margin-left: 0 auto;",
+            @click="clearButtonUp",
+            :maxHeight="pxImgHeight",
+            :maxWidth="pxImgWidth",
+            :maxQuality="quality",
+            @resizedImage="resizedImage"
+            )
+
+            div(v-if="imagesResized.length > 0" style="margin: 30px 0px 0px 0px;")
+              button(@click="cleanImages") Clear images' set
+
         .m-30
           h2 Image settings
           .line-container.line-border
@@ -98,21 +114,6 @@
                 select(name="pdfPPi", v-model="pdfPPi", @change="resolutions")
                   option(v-for="(ppi, index) in ppiOptions", :key="index", :value="ppi") {{ ppi }} PPI
 
-        .m-30
-          .upload-field
-            h2 Upload images
-            UploadImage(
-            style="margin-left: 0 auto;",
-            @click="clearButtonUp",
-            :maxHeight="pxImgHeight",
-            :maxWidth="pxImgWidth",
-            :maxQuality="quality",
-            @resizedImage="resizedImage"
-            )
-
-            div(v-if="imagesResized.length > 0" style="margin: 30px 0px 0px 0px;")
-              button(@click="cleanImages") Clear images' set
-
       .body-side
         .m-30
           h3 PDF settings:
@@ -135,257 +136,258 @@
 </template>
 
 <script>
-  import JsPdf from 'jspdf'
-  import UploadImage from './UploadImage'
-  import ShowImages from './ShowImages'
+import JsPdf from 'jspdf'
+import UploadImage from './UploadImage'
+import ShowImages from './ShowImages'
 
-  export default {
-    name: 'Home',
-    components: {
-      UploadImage,
-      ShowImages
+export default {
+  name: 'Home',
+  components: {
+    UploadImage,
+    ShowImages
+  },
+  data () {
+    return {
+      pdfMade: false,
+      pdfImgOnPage: 1,
+      pdfOrientation: 'portrait',
+      pdfQuality: 'low',
+      pdfPPi: '72',
+      marginWidth: 0,
+      marginHeight: 0,
+      quality: 90,
+      maxWidth: 0,
+      maxHeight: 0,
+      imagesResized: []
+    }
+  },
+  create () {
+    this.imagesResized = []
+    this.resolutions()
+  },
+  mounted () {
+    this.imagesResized = []
+    this.resolutions()
+  },
+  methods: {
+    clearButtonUp () {
+      this.pdfMade = false
+      document.getElementById('docUp').value = ''
     },
-    data () {
-      return {
-        pdfMade: false,
-        pdfImgOnPage: 1,
-        pdfOrientation: 'portrait',
-        pdfQuality: 'low',
-        pdfPPi: '72',
-        marginWidth: 0,
-        marginHeight: 0,
-        quality: 90,
-        maxWidth: 0,
-        maxHeight: 0,
-        imagesResized: []
+    cleanImages () {
+      this.pdfMade = false
+      this.imagesResized = []
+      this.clearButtonUp()
+    },
+    resizedImage (img) {
+      if (typeof img !== 'undefined') {
+        this.imagesResized.push(img)
+        this.pdfMade = true
       }
     },
-    create () {
-      this.imagesResized = []
-      this.resolutions()
+    getSrc (img) {
+      if (typeof img.base64 !== 'undefined') {
+        return 'data:image/png;base64,' + img.base64
+      }
+
+      return ''
     },
-    mounted () {
-      this.imagesResized = []
-      this.resolutions()
-    },
-    methods: {
-      clearButtonUp () {
-        this.pdfMade = false
-        document.getElementById('docUp').value = ''
-      },
-      cleanImages () {
-        this.pdfMade = false
-        this.imagesResized = []
-        this.clearButtonUp()
-      },
-      resizedImage (img) {
-        if (typeof img !== 'undefined') {
-          this.imagesResized.push(img)
-          this.pdfMade = true
-        }
-      },
-      getSrc (img) {
-        if (typeof img.base64 !== 'undefined') {
-          return 'data:image/png;base64,' + img.base64
+    downloadPdf () {
+      let pdf = new JsPdf(this.pdfOrientation[0], 'pt', [this.maxWidth * 0.75, this.maxHeight * 0.75])
+      let counter = 0
+      let iterator = 0
+      var hMargin = this.ptMarginHeight
+      var wMargin = this.ptMarginWidth
+      var fitSize = 0
+      while (iterator < this.imagesResized.length) {
+        counter += 1
+
+        let isPortrait = this.pdfOrientation === 'portrait'
+        let image = this.imagesResized[iterator]
+
+        if (typeof image === 'undefined') {
+          return
         }
 
-        return ''
-      },
-      downloadPdf () {
-        let pdf = new JsPdf(this.pdfOrientation[0], 'pt', [this.maxWidth * 0.75, this.maxHeight * 0.75])
-        let counter = 0
-        let iterator = 0
-        var hMargin = this.ptMarginHeight
-        var wMargin = this.ptMarginWidth
-        var fitSize = 0
-        while (iterator < this.imagesResized.length) {
-          counter += 1
-
-          let isPortrait = this.pdfOrientation === 'portrait'
-          let image = this.imagesResized[iterator]
-
-          if (typeof image === 'undefined') {
-            return
-          }
-
-          if (this.pdfImgOnPage > 1 && iterator % this.pdfImgOnPage === 0) {
-            fitSize =
-              isPortrait ? (
-                this.maxHeight * 0.75
-              ) / this.pdfImgOnPage : (
-                this.maxWidth * 0.75
-              ) / this.pdfImgOnPage
-          }
-
-          var wScale = image.scale[0] * 0.75
-          var hScale = image.scale[1] * 0.75
-
-          // Resize with new Scale
-          if (isPortrait && fitSize > 0) {
-            let oldScale = hScale
-            hScale = fitSize
-            wScale =
-              (
-                wScale * hScale
-              ) / oldScale
-          } else if (!isPortrait && fitSize > 0) {
-            let oldScale = wScale
-            wScale = fitSize
-            hScale =
-              (
-                hScale * wScale
-              ) / oldScale
-          }
-
-          console.log(iterator, fitSize, image, hScale, wScale, hMargin, wMargin)
-
-          pdf.addImage(image.canvasUrl, 'jpeg', wMargin, hMargin, wScale, hScale)
-          if (counter >= parseInt(this.pdfImgOnPage) && iterator < (
-              this.imagesResized.length - 1
-            )) {
-            fitSize = 0
-            counter = 0
-            hMargin = this.ptMarginHeight
-            wMargin = this.ptMarginWidth
-            pdf.addPage()
-          } else {
-            if (isPortrait) {
-              hMargin += hScale + this.ptMarginHeight
-            } else {
-              wMargin += wScale + this.ptMarginWidth
-            }
-          }
-
-          iterator += 1
+        if (this.pdfImgOnPage > 1 && iterator % this.pdfImgOnPage === 0) {
+          fitSize =
+            isPortrait ? (
+              this.maxHeight * 0.75
+            ) / this.pdfImgOnPage : (
+              this.maxWidth * 0.75
+            ) / this.pdfImgOnPage
         }
 
-        pdf.save()
-      },
-      resolutions () {
-        this.$nextTick(() => {
-          let resolutions = {
-            '72': { 'width': 595, 'height': 842 },
-            '96': { 'width': 794, 'height': 1123 },
-            '150': { 'width': 1240, 'height': 1754 },
-            '300': { 'width': 2480, 'height': 3508 },
-            '600': { 'width': 4960, 'height': 7016 },
-            '720': { 'width': 5953, 'height': 8419 },
-            '1200': { 'width': 9921, 'height': 14032 },
-            '1440': { 'width': 11906, 'height': 16838 },
-            '2400': { 'width': 19843, 'height': 28063 },
-            '2880': { 'width': 23811, 'height': 33676 }
-          }
+        var wScale = image.scale[0] * 0.75
+        var hScale = image.scale[1] * 0.75
 
-          this.maxHeight = resolutions[this.pdfPPi].height
-          this.maxWidth = resolutions[this.pdfPPi].width
-
-          this.cleanImages()
-        })
-      },
-      getAvarageScale (index) {
-        let slice = this.imagesResized.slice(index, index + this.pdfImgOnPage)
-
-        // Verify if images fit on page "naturally"
-        let imagesFitOnPage = 0
-        for (let s of slice) {
-          imagesFitOnPage += this.pdfOrientation === 'portrait' ? s.scale[1] : s.scale[0]
+        // Resize with new Scale
+        if (isPortrait && fitSize > 0) {
+          let oldScale = hScale
+          hScale = fitSize
+          wScale =
+            (
+              wScale * hScale
+            ) / oldScale
+        } else if (!isPortrait && fitSize > 0) {
+          let oldScale = wScale
+          wScale = fitSize
+          hScale =
+            (
+              hScale * wScale
+            ) / oldScale
         }
 
-        if (imagesFitOnPage <= this.maxHeight) {
-          return 0
+        console.log(iterator, fitSize, image, hScale, wScale, hMargin, wMargin)
+
+        pdf.addImage(image.canvasUrl, 'jpeg', wMargin, hMargin, wScale, hScale)
+        if (counter >= parseInt(this.pdfImgOnPage) && iterator < (
+          this.imagesResized.length - 1
+        )) {
+          fitSize = 0
+          counter = 0
+          hMargin = this.ptMarginHeight
+          wMargin = this.ptMarginWidth
+          pdf.addPage()
         } else {
-          let spareSize = imagesFitOnPage - this.maxHeight
-          return spareSize / this.pdfImgOnPage
+          if (isPortrait) {
+            hMargin += hScale + this.ptMarginHeight
+          } else {
+            wMargin += wScale + this.ptMarginWidth
+          }
         }
-      },
-      changeQuality (quality) {
-        switch (quality) {
-          case 'lowest':
-            this.pdfPPi = '72'
-            this.pdfQuality = 'low'
-            break
 
-          case 'low':
-            this.pdfPPi = '300'
-            this.pdfQuality = 'low'
-            break
+        iterator += 1
+      }
 
-          case 'medium':
-            this.pdfQuality = 'medium'
-            this.pdfPPi = '600'
-            break
-
-          case 'high':
-            this.pdfQuality = 'high'
-            this.pdfPPi = '1440'
-            break
-
-          default:
-            break
+      pdf.save()
+    },
+    resolutions () {
+      this.$nextTick(() => {
+        let resolutions = {
+          '72': { 'width': 595, 'height': 842 },
+          '96': { 'width': 794, 'height': 1123 },
+          '150': { 'width': 1240, 'height': 1754 },
+          '300': { 'width': 2480, 'height': 3508 },
+          '600': { 'width': 4960, 'height': 7016 },
+          '720': { 'width': 5953, 'height': 8419 },
+          '1200': { 'width': 9921, 'height': 14032 },
+          '1440': { 'width': 11906, 'height': 16838 },
+          '2400': { 'width': 19843, 'height': 28063 },
+          '2880': { 'width': 23811, 'height': 33676 }
         }
-        this.resolutions()
-      },
-      getId (index) {
-        return 'image-' + index
+
+        this.maxHeight = resolutions[this.pdfPPi].height
+        this.maxWidth = resolutions[this.pdfPPi].width
+
+        this.cleanImages()
+      })
+    },
+    getAvarageScale (index) {
+      let slice = this.imagesResized.slice(index, index + this.pdfImgOnPage)
+
+      // Verify if images fit on page "naturally"
+      let imagesFitOnPage = 0
+      for (let s of slice) {
+        imagesFitOnPage += this.pdfOrientation === 'portrait' ? s.scale[1] : s.scale[0]
+      }
+
+      if (imagesFitOnPage <= this.maxHeight) {
+        return 0
+      } else {
+        let spareSize = imagesFitOnPage - this.maxHeight
+        return spareSize / this.pdfImgOnPage
       }
     },
-    computed: {
-      ppiOptions: function () {
-        let ppi = {
-          'low': ['72', '96', '150', '300'],
-          'medium': ['600', '720', '1200'],
-          'high': ['1440', '2400', '2880']
-        }
+    changeQuality (quality) {
+      switch (quality) {
+        case 'lowest':
+          this.pdfPPi = '72'
+          this.pdfQuality = 'low'
+          break
 
-        this.pdfPPi = ppi[this.pdfQuality][0]
+        case 'low':
+          this.pdfPPi = '300'
+          this.pdfQuality = 'low'
+          break
 
-        return ppi[this.pdfQuality]
-      },
-      pxMarginHeight: function () {
-        let pxCm = 38
+        case 'medium':
+          this.pdfQuality = 'medium'
+          this.pdfPPi = '600'
+          break
 
-        return this.marginHeight * pxCm
-      },
-      pxMarginWidth: function () {
-        let pxCm = 38
+        case 'high':
+          this.pdfQuality = 'high'
+          this.pdfPPi = '1440'
+          break
 
-        return this.marginWidth * pxCm
-      },
-      ptMarginWidth: function () {
-        return this.pxMarginWidth * 0.75
-      },
-      ptMarginHeight: function () {
-        return this.pxMarginHeight * 0.75
-      },
-      pxImgWidth: function () {
-        let reduceMargin = this.pdfOrientation === 'landscape' ? this.pxMarginHeight * 4 : this.pxMarginHeight * 2
-        let size = this.maxWidth - reduceMargin
-        size = this.pdfOrientation === 'portrait' ? size : size / this.pdfImgOnPage
-        return parseInt(size)
-      },
-      pxImgHeight: function () {
-        let reduceMargin = this.pdfOrientation === 'portrait' ? this.pxMarginHeight * 4 : this.pxMarginHeight * 2
-        let size = this.maxHeight - reduceMargin
-        size = this.pdfOrientation === 'portrait' ? size / this.pdfImgOnPage : size
-        return parseInt(size)
-      },
-      ptImgWidth: function () {
-        return parseInt(this.pxImgWidth * 0.75)
-      },
-      ptImgHeigth: function () {
-        return parseInt(this.pxImgHeight * 0.75)
+        default:
+          break
       }
+      this.resolutions()
     },
-    filters: {
-      capitalize: function (value) {
-        if (!value) {
-          return ''
-        }
-        value = value.toString()
-        return value.charAt(0).toUpperCase() + value.slice(1)
+    getId (index) {
+      return 'image-' + index
+    }
+  },
+  computed: {
+    ppiOptions: function () {
+      let ppi = {
+        'low': ['72', '96', '150', '300'],
+        'medium': ['600', '720', '1200'],
+        'high': ['1440', '2400', '2880']
       }
+
+      this.pdfPPi = ppi[this.pdfQuality][0]
+
+      return ppi[this.pdfQuality]
+    },
+    pxMarginHeight: function () {
+      let pxCm = 38
+
+      return this.marginHeight * pxCm
+    },
+    pxMarginWidth: function () {
+      let pxCm = 38
+
+      return this.marginWidth * pxCm
+    },
+    ptMarginWidth: function () {
+      return this.pxMarginWidth * 0.75
+    },
+    ptMarginHeight: function () {
+      return this.pxMarginHeight * 0.75
+    },
+    pxImgWidth: function () {
+      let reduceMargin = this.pdfOrientation === 'landscape' ? this.pxMarginHeight * 4 : this.pxMarginHeight * 2
+      let size = this.maxWidth - reduceMargin
+      size = this.pdfOrientation === 'portrait' ? size : size / this.pdfImgOnPage
+      return parseInt(size)
+    },
+    pxImgHeight: function () {
+      let reduceMargin = this.pdfOrientation === 'portrait' ? this.pxMarginHeight * 4 : this.pxMarginHeight * 2
+      let size = this.maxHeight - reduceMargin
+      size = this.pdfOrientation === 'portrait' ? size / this.pdfImgOnPage : size
+      return parseInt(size)
+    },
+    ptImgWidth: function () {
+      return parseInt(this.pxImgWidth * 0.75)
+    },
+    ptImgHeigth: function () {
+      return parseInt(this.pxImgHeight * 0.75)
+    }
+  },
+  filters: {
+    capitalize: function (value) {
+      if (!value) {
+        return ''
+      }
+      value = value.toString()
+      return value.charAt(0)
+      .toUpperCase() + value.slice(1)
     }
   }
+}
 </script>
 
 <style scoped>
